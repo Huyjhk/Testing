@@ -5,14 +5,14 @@ local RunService = game:GetService("RunService")
 
 local borderThickness = 3
 local outerCornerRadius = 15
-local transparencyLevel = 0.3
-local FONT_SIZE = 24 -- Kích thước font cố định (đồng nhất cho cả hai phần)
+local transparencyLevel = 0.3 -- Độ mờ của nền đen bên trong
+local FONT_SIZE = 24 
 
 local USERNAME = localPlayer.Name
--- TÊN FILE CONFIG: Lưu theo tên người dùng Roblox (ví dụ: user_name.txt)
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
 
--- Hàm giả định để đọc/lưu nội dung file
+-- ... (Hàm readConfig, saveConfig, obscureUsername giữ nguyên) ...
+
 local function readConfig(fileName)
     if readfile then
         local success, content = pcall(readfile, fileName)
@@ -32,7 +32,6 @@ local function saveConfig(fileName, content)
     end
 end
 
--- HÀM CHE 60% TÊN
 local function obscureUsername(username)
     local len = #username
     if len <= 5 then return username end 
@@ -70,9 +69,9 @@ if localPlayer and playerGui then
     outerFrame.Size = UDim2.new(0.5, 0, 0.125, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
-    outerFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Nền đen
+    outerFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- *** KHẮC PHỤC LỖI VIỀN: Nền đen đục ***
     outerFrame.BorderSizePixel = 0
-    outerFrame.BackgroundTransparency = 0 
+    outerFrame.BackgroundTransparency = 0 -- *** KHẮC PHỤC LỖI VIỀN: Bỏ trong suốt ở Frame ngoài ***
     outerFrame.Parent = screenGui
     
     -- KÉO THẢ (DRAGGABLE)
@@ -95,7 +94,7 @@ if localPlayer and playerGui then
     innerFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     innerFrame.BackgroundColor3 = Color3.new(0, 0, 0)
     innerFrame.BorderSizePixel = 0
-    innerFrame.BackgroundTransparency = transparencyLevel
+    innerFrame.BackgroundTransparency = transparencyLevel -- *** KHẮC PHỤC LỖI MỜ: Chỉ áp dụng độ mờ ở Frame bên trong ***
     innerFrame.Parent = outerFrame
     
     -- UIListLayout ĐỂ SẮP XẾP CÁC PHẦN DỌC (USERNAME trên, NOTE dưới)
@@ -177,35 +176,30 @@ if localPlayer and playerGui then
         saveConfig(CONFIG_FILE_NAME, contentToSave)
     end)
     
-    print("Đã tải config cá nhân (" .. CONFIG_FILE_NAME .. ").")
-
-    --- PHẦN 6: THÊM CHỮ KÝ (BY HUYUNFES) CÓ HIỆU ỨNG CẦU VỒNG ---
     
-    -- Khung chứa (Frame) để áp dụng UIGradient
+    --- PHẦN 6: CHỮ KÝ CẦU VỒNG (BY HUYUNFES) ---
+    
     local signatureFrame = Instance.new("Frame")
     signatureFrame.Name = "SignatureFrame"
     signatureFrame.Size = UDim2.new(0, 100, 0, 20) 
-    -- Vị trí: Góc trên bên phải của OUTER FRAME
-    signatureFrame.Position = UDim2.new(1, -100, 0, -20) -- X = 1 (căn lề phải), Y = 0 (căn lề trên)
+    signatureFrame.Position = UDim2.new(1, -100, 0, -20) 
     signatureFrame.AnchorPoint = Vector2.new(0, 0)
-    signatureFrame.BackgroundTransparency = 1
-    signatureFrame.Parent = outerFrame -- **QUAN TRỌNG: Đặt làm con của outerFrame để di chuyển theo**
+    signatureFrame.BackgroundTransparency = 1 -- Giữ trong suốt
+    signatureFrame.Parent = outerFrame 
 
-    -- Text Label hiển thị chữ (sử dụng TextStroke để tạo hiệu ứng Gradient trên chữ)
     local signatureText = Instance.new("TextLabel")
     signatureText.Name = "SignatureText"
     signatureText.Text = "By HuyUnfes"
-    signatureText.TextColor3 = Color3.new(1, 1, 1) -- Đặt màu trắng để Gradient hiển thị rõ
+    signatureText.TextColor3 = Color3.new(1, 1, 1) 
     signatureText.TextScaled = false
     signatureText.TextSize = 18
     signatureText.Font = Enum.Font.SourceSans
     signatureText.BackgroundTransparency = 1
     signatureText.Size = UDim2.new(1, 0, 1, 0)
     signatureText.TextXAlignment = Enum.TextXAlignment.Right
-    signatureText.TextStrokeTransparency = 0.5 -- Cần thiết để gradient nổi bật
+    signatureText.TextStrokeTransparency = 0.5 
     signatureText.Parent = signatureFrame
 
-    -- UIGradient để tạo hiệu ứng cầu vồng cho khung chữ ký
     local signatureGradient = Instance.new("UIGradient")
     signatureGradient.Rotation = 0
     signatureGradient.Parent = signatureFrame
