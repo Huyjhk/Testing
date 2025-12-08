@@ -70,9 +70,9 @@ if localPlayer and playerGui then
     outerFrame.Size = UDim2.new(0.5, 0, 0.125, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
-    outerFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Đã sửa lỗi viền trắng: Nền đen
+    outerFrame.BackgroundColor3 = Color3.new(0, 0, 0) -- Nền đen
     outerFrame.BorderSizePixel = 0
-    outerFrame.BackgroundTransparency = 0 -- Đã sửa lỗi viền trắng: Bỏ trong suốt
+    outerFrame.BackgroundTransparency = 0 
     outerFrame.Parent = screenGui
     
     -- KÉO THẢ (DRAGGABLE)
@@ -177,34 +177,40 @@ if localPlayer and playerGui then
         saveConfig(CONFIG_FILE_NAME, contentToSave)
     end)
     
-    
-    --- PHẦN 6: THÊM CHỮ KÝ (BY HUYUNFES) ---
-    local signatureLabel = Instance.new("TextLabel")
-    signatureLabel.Name = "SignatureLabel"
-    signatureLabel.Text = "By HuyUnfes"
-    signatureLabel.TextColor3 = Color3.new(1, 1, 1) -- Màu trắng
-    signatureLabel.TextScaled = false
-    signatureLabel.TextSize = 18 -- Kích thước chữ nhỏ
-    signatureLabel.Font = Enum.Font.SourceSans
-    signatureLabel.BackgroundTransparency = 1
-    
-    -- Đặt vị trí dựa trên outerFrame.Position và Size
-    -- Position: Lấy vị trí Neo (0.5, 0.05) của outerFrame (ở giữa, sát trên)
-    -- Sau đó đẩy label sang phải bằng nửa chiều rộng của outerFrame
-    local frameWidthScale = outerFrame.Size.X.Scale
-    local framePositionX = outerFrame.Position.X.Scale
-    local framePositionY = outerFrame.Position.Y.Scale
-    
-    -- Vị trí: Ở góc trên bên phải của outerFrame
-    signatureLabel.Position = UDim2.new(framePositionX + frameWidthScale / 2, -5, framePositionY, 0) -- -5 offset để dịch vào 1 chút
-    signatureLabel.Size = UDim2.new(0, 100, 0, 20) -- Kích thước cố định (dài 100, cao 20)
-    signatureLabel.AnchorPoint = Vector2.new(1, 0) -- Neo ở góc trên bên phải của label
-    signatureLabel.TextXAlignment = Enum.TextXAlignment.Right -- Căn lề phải
-    signatureLabel.Parent = screenGui
-    
-    
-    print("Đã thêm chữ ký 'By HuyUnfes' ở góc trên bên phải.")
+    print("Đã tải config cá nhân (" .. CONFIG_FILE_NAME .. ").")
 
+    --- PHẦN 6: THÊM CHỮ KÝ (BY HUYUNFES) CÓ HIỆU ỨNG CẦU VỒNG ---
+    
+    -- Khung chứa (Frame) để áp dụng UIGradient
+    local signatureFrame = Instance.new("Frame")
+    signatureFrame.Name = "SignatureFrame"
+    signatureFrame.Size = UDim2.new(0, 100, 0, 20) 
+    -- Vị trí: Góc trên bên phải của OUTER FRAME
+    signatureFrame.Position = UDim2.new(1, -100, 0, -20) -- X = 1 (căn lề phải), Y = 0 (căn lề trên)
+    signatureFrame.AnchorPoint = Vector2.new(0, 0)
+    signatureFrame.BackgroundTransparency = 1
+    signatureFrame.Parent = outerFrame -- **QUAN TRỌNG: Đặt làm con của outerFrame để di chuyển theo**
+
+    -- Text Label hiển thị chữ (sử dụng TextStroke để tạo hiệu ứng Gradient trên chữ)
+    local signatureText = Instance.new("TextLabel")
+    signatureText.Name = "SignatureText"
+    signatureText.Text = "By HuyUnfes"
+    signatureText.TextColor3 = Color3.new(1, 1, 1) -- Đặt màu trắng để Gradient hiển thị rõ
+    signatureText.TextScaled = false
+    signatureText.TextSize = 18
+    signatureText.Font = Enum.Font.SourceSans
+    signatureText.BackgroundTransparency = 1
+    signatureText.Size = UDim2.new(1, 0, 1, 0)
+    signatureText.TextXAlignment = Enum.TextXAlignment.Right
+    signatureText.TextStrokeTransparency = 0.5 -- Cần thiết để gradient nổi bật
+    signatureText.Parent = signatureFrame
+
+    -- UIGradient để tạo hiệu ứng cầu vồng cho khung chữ ký
+    local signatureGradient = Instance.new("UIGradient")
+    signatureGradient.Rotation = 0
+    signatureGradient.Parent = signatureFrame
+    
+    
     -- 7. HÀM TẠO HIỆU ỨNG CẦU VỒNG LIÊN TỤC
     local function animateRainbowBorder()
         local h = 0 
@@ -222,7 +228,11 @@ if localPlayer and playerGui then
                 ColorSequenceKeypoint.new(1, Color3.fromHSV((h + 0.66) % 1, 1, 1))
             })
 
+            -- Áp dụng cho viền cầu vồng
             uiGradient.Color = colorSequence
+            
+            -- Áp dụng cho chữ ký cầu vồng
+            signatureGradient.Color = colorSequence
             
             RunService.RenderStepped:Wait() 
         end
