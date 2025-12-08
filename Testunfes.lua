@@ -6,7 +6,10 @@ local RunService = game:GetService("RunService")
 local borderThickness = 3
 local outerCornerRadius = 15
 local transparencyLevel = 0.3
-local FONT_SIZE = 24 -- Kích thước font cố định
+
+-- CẤU HÌNH KÍCH THƯỚC CHỮ
+local USERNAME_FONT_SIZE = 24 -- Kích thước chữ cho tên (giữ nguyên cho gọn)
+local NOTE_FONT_SIZE = 30     -- Kích thước chữ cho Note (TO HƠN theo yêu cầu)
 
 local USERNAME = localPlayer.Name
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
@@ -69,7 +72,7 @@ if localPlayer and playerGui then
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
     outerFrame.BorderSizePixel = 0
     outerFrame.BackgroundTransparency = transparencyLevel
-    outerFrame.ClipsDescendants = false -- Quan trọng: Để chữ hiển thị được bên ngoài khung
+    outerFrame.ClipsDescendants = false -- QUAN TRỌNG: Để chữ hiển thị được bên trên khung
     outerFrame.Parent = screenGui
     
     -- KÉO THẢ (DRAGGABLE)
@@ -84,23 +87,27 @@ if localPlayer and playerGui then
     uiGradient.Rotation = 0
     uiGradient.Parent = outerFrame
     
-    -- === [MỚI] TEXT CREDIT: SCRIPT BY HUYUNFES ===
+    -- === [CHỈNH SỬA] TEXT CREDIT: SCRIPT BY HUYUNFES ===
     local creditLabel = Instance.new("TextLabel")
     creditLabel.Name = "CreditLabel"
     creditLabel.Text = "Script by HuyUnfes"
     creditLabel.BackgroundTransparency = 1
-    creditLabel.TextSize = 14 -- Font nhỏ
-    creditLabel.Font = Enum.Font.SourceSansBold -- Font đậm
-    creditLabel.TextColor3 = Color3.new(1, 1, 1) -- Màu trắng cơ bản (sẽ bị gradient ghi đè)
-    creditLabel.Size = UDim2.new(0, 0, 0, 20) -- Chiều cao cố định
-    creditLabel.AutomaticSize = Enum.AutomaticSize.X -- Tự động chỉnh chiều ngang theo độ dài tên
+    creditLabel.TextSize = 14 
+    creditLabel.Font = Enum.Font.SourceSansBold 
+    creditLabel.TextColor3 = Color3.new(1, 1, 1) 
+    creditLabel.Size = UDim2.new(0, 0, 0, 15) -- Chiều cao vừa đủ khớp chữ
+    creditLabel.AutomaticSize = Enum.AutomaticSize.X 
     
-    -- Căn chỉnh vị trí: Góc dưới phải của label neo vào góc trên phải của khung
-    creditLabel.AnchorPoint = Vector2.new(1, 1) 
-    creditLabel.Position = UDim2.new(1, 0, 0, -3) -- Nằm ngay mép phải, cách mép trên 3 pixel
-    creditLabel.Parent = outerFrame -- Làm con của outerFrame để di chuyển cùng khi kéo thả
+    -- Căn chỉnh vị trí MỚI
+    creditLabel.AnchorPoint = Vector2.new(1, 1) -- Neo góc dưới cùng bên phải của chữ
+    -- Giải thích: 
+    -- X = 1, -8: Cạnh phải lùi vào 8 pixel (sang trái 1 xíu)
+    -- Y = 0, 0: Ngay mép trên cùng của khung (chạm viền)
+    creditLabel.Position = UDim2.new(1, -8, 0, 0) 
+    
+    creditLabel.Parent = outerFrame 
 
-    -- Tạo Gradient cho chữ để có màu cầu vồng
+    -- Tạo Gradient cho chữ
     local creditGradient = Instance.new("UIGradient")
     creditGradient.Rotation = 0
     creditGradient.Parent = creditLabel
@@ -134,7 +141,7 @@ if localPlayer and playerGui then
     usernameLabel.Text = "Username: " .. obscureUsername(USERNAME) 
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false 
-    usernameLabel.TextSize = FONT_SIZE 
+    usernameLabel.TextSize = USERNAME_FONT_SIZE -- Dùng size vừa phải cho tên
     usernameLabel.Font = Enum.Font.SourceSansBold
     usernameLabel.BackgroundTransparency = 1
     usernameLabel.TextYAlignment = Enum.TextYAlignment.Top 
@@ -160,7 +167,7 @@ if localPlayer and playerGui then
     noteTextBox.TextScaled = false 
     noteTextBox.MultiLine = true    
     noteTextBox.TextWrapped = true 
-    noteTextBox.TextSize = FONT_SIZE 
+    noteTextBox.TextSize = NOTE_FONT_SIZE -- [ĐÃ TĂNG] Font chữ Note to hơn
     noteTextBox.Font = Enum.Font.SourceSans
     noteTextBox.BackgroundTransparency = 1
     noteTextBox.TextXAlignment = Enum.TextXAlignment.Left
@@ -208,7 +215,7 @@ if localPlayer and playerGui then
 
             -- Cập nhật màu cho cả viền và chữ Credit
             uiGradient.Color = colorSequence
-            creditGradient.Color = colorSequence -- [MỚI] Cập nhật màu cho chữ
+            creditGradient.Color = colorSequence 
             
             RunService.RenderStepped:Wait() 
         end
