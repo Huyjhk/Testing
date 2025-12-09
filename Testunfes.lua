@@ -6,12 +6,11 @@ local RunService = game:GetService("RunService")
 local borderThickness = 3
 local outerCornerRadius = 15
 local transparencyLevel = 0.3
-
--- CẤU HÌNH KÍCH THƯỚC CHỮ
-local USERNAME_FONT_SIZE = 24 -- Kích thước chữ cho tên (giữ nguyên cho gọn)
-local NOTE_FONT_SIZE = 30     -- Kích thước chữ cho Note (TO HƠN theo yêu cầu)
+local FONT_SIZE = 24 -- Kích thước font cố định (đồng nhất cho cả hai phần)
+local AUTHOR_TEXT = "Script by HuyUnfes" -- Chuỗi tác giả
 
 local USERNAME = localPlayer.Name
+-- TÊN FILE CONFIG: Lưu theo tên người dùng Roblox (ví dụ: user_name.txt)
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
 
 -- Hàm giả định để đọc/lưu nội dung file
@@ -46,10 +45,13 @@ local function obscureUsername(username)
     local endKeep = math.floor(len * keepPercent)
     local obscureLength = len - startKeep - endKeep
 
-    if obscureLength < 0 then obscureLength = 0 end
+    if obscureLength < 0 then
+        obscureLength = 0
+    end
     
     local startPart = username:sub(1, startKeep)
     local endPart = username:sub(len - endKeep + 1, len)
+    
     local obscureString = string.rep("*", obscureLength)
 
     return startPart .. obscureString .. endPart
@@ -72,7 +74,6 @@ if localPlayer and playerGui then
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
     outerFrame.BorderSizePixel = 0
     outerFrame.BackgroundTransparency = transparencyLevel
-    outerFrame.ClipsDescendants = false -- QUAN TRỌNG: Để chữ hiển thị được bên trên khung
     outerFrame.Parent = screenGui
     
     -- KÉO THẢ (DRAGGABLE)
@@ -87,33 +88,7 @@ if localPlayer and playerGui then
     uiGradient.Rotation = 0
     uiGradient.Parent = outerFrame
     
-    -- === [CHỈNH SỬA] TEXT CREDIT: SCRIPT BY HUYUNFES ===
-    local creditLabel = Instance.new("TextLabel, MainFrame")
-    creditLabel.Name = "CreditLabel"
-    creditLabel.Text = "Script by HuyUnfes"
-    creditLabel.BackgroundTransparency = 1
-    creditLabel.TextSize = 14 
-    creditLabel.Font = Enum.Font.SourceSansBold 
-    creditLabel.TextColor3 = Color3.new(1, 1, 1) 
-    creditLabel.Size = UDim2.new(1, 0, 0, 20) -- Chiều cao vừa đủ khớp chữ
-    creditLabel.AutomaticSize = Enum.AutomaticSize.X 
-    
-    -- Căn chỉnh vị trí MỚI
-    creditLabel.AnchorPoint = Vector2.new(0.5, 1) -- Neo góc dưới cùng bên phải của chữ
-    -- Giải thích: 
-    -- X = 1, -8: Cạnh phải lùi vào 8 pixel (sang trái 1 xíu)
-    -- Y = 0, 0: Ngay mép trên cùng của khung (chạm viền)
-    creditLabel.Position = UDim2.new(0.5, 0, 1, -2) 
-    
-    creditLabel.Parent = outerFrame 
-
-    -- Tạo Gradient cho chữ
-    local creditGradient = Instance.new("UIGradient")
-    creditGradient.Rotation = 0
-    creditGradient.Parent = creditLabel
-    -- =============================================
-
-    -- 3. TẠO FRAME TRONG (INNER FRAME)
+    -- 3. TẠO FRAME TRONG (INNER FRAME) - NỀN ĐEN VÀ BỐ CỤC CHÍNH
     local innerFrame = Instance.new("Frame")
     innerFrame.Name = "InnerBlackBackground"
     innerFrame.Size = UDim2.new(1, -2 * borderThickness, 1, -2 * borderThickness)
@@ -124,6 +99,7 @@ if localPlayer and playerGui then
     innerFrame.BackgroundTransparency = transparencyLevel
     innerFrame.Parent = outerFrame
     
+    -- UIListLayout ĐỂ SẮP XẾP CÁC PHẦN DỌC (USERNAME trên, NOTE dưới)
     local listLayout = Instance.new("UIListLayout")
     listLayout.Padding = UDim.new(0, 5) 
     listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
@@ -134,32 +110,56 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, innerRadius) 
     innerCorner.Parent = innerFrame
 
-    -- A. PHẦN USERNAME
+    -- ********* PHẦN THÊM MỚI: TEXT LABEL TÁC GIẢ *********
+    local authorLabel = Instance.new("TextLabel")
+    authorLabel.Name = "AuthorLabel"
+    authorLabel.Size = UDim2.new(0.9, 0, 0.2, 0) -- Chiều rộng 90%, Chiều cao 20% của innerFrame
+    authorLabel.Position = UDim2.new(0.5, 0, 0, 0) -- Vị trí tạm thời (sẽ bị ghi đè bởi UILayout)
+    authorLabel.AnchorPoint = Vector2.new(0.5, 0)
+    authorLabel.Text = AUTHOR_TEXT
+    authorLabel.TextColor3 = Color3.new(0.5, 0.5, 0.5) -- Màu xám nhạt
+    authorLabel.TextScaled = false
+    authorLabel.TextSize = 18 -- Kích thước nhỏ hơn FONT_SIZE
+    authorLabel.Font = Enum.Font.SourceSans
+    authorLabel.BackgroundTransparency = 1
+    authorLabel.TextXAlignment = Enum.TextXAlignment.Right -- Căn lề phải
+    authorLabel.TextYAlignment = Enum.TextYAlignment.Top
+    authorLabel.LayoutOrder = 0 -- Đặt nó lên trên cùng (trước UsernamePart)
+    authorLabel.Parent = innerFrame
+    
+    -- ĐIỀU CHỈNH listLayout ĐỂ XỬ LÝ TextLabel mới
+    listLayout.Padding = UDim.new(0, 2) -- Giảm padding
+    
+    -- A. PHẦN USERNAME (TEXTLABEL)
     local usernameLabel = Instance.new("TextLabel")
     usernameLabel.Name = "UsernamePart"
     usernameLabel.Size = UDim2.new(1, 0, 0.2, 0)
     usernameLabel.Text = "Username: " .. obscureUsername(USERNAME) 
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false 
-    usernameLabel.TextSize = USERNAME_FONT_SIZE -- Dùng size vừa phải cho tên
+    usernameLabel.TextSize = FONT_SIZE 
     usernameLabel.Font = Enum.Font.SourceSansBold
     usernameLabel.BackgroundTransparency = 1
     usernameLabel.TextYAlignment = Enum.TextYAlignment.Top 
+    usernameLabel.LayoutOrder = 1 -- Đặt nó sau AuthorLabel
     usernameLabel.Parent = innerFrame
 
-    -- B. PHẦN NOTE
+    -- B. PHẦN NOTE (SCROLLINGFRAME)
     local noteScrollingFrame = Instance.new("ScrollingFrame")
     noteScrollingFrame.Name = "NoteScrollingFrame"
     noteScrollingFrame.Size = UDim2.new(1, 0, 0.75, 0) 
     noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
     noteScrollingFrame.BackgroundTransparency = 1
     noteScrollingFrame.ScrollBarThickness = 6
+    noteScrollingFrame.LayoutOrder = 2 -- Đặt nó sau UsernamePart
     noteScrollingFrame.Parent = innerFrame
 
+    -- TẠO TEXTBOX BÊN TRONG SCROLLING FRAME
     local noteTextBox = Instance.new("TextBox")
     noteTextBox.Name = "NoteTextBox"
     noteTextBox.Size = UDim2.new(1, 0, 2, 0) 
     
+    -- Tải nội dung đã lưu và thêm tiền tố "Note:\n"
     local currentNote = readConfig(CONFIG_FILE_NAME)
     noteTextBox.Text = "Note:\n" .. currentNote
     
@@ -167,29 +167,43 @@ if localPlayer and playerGui then
     noteTextBox.TextScaled = false 
     noteTextBox.MultiLine = true    
     noteTextBox.TextWrapped = true 
-    noteTextBox.TextSize = NOTE_FONT_SIZE -- [ĐÃ TĂNG] Font chữ Note to hơn
+    noteTextBox.TextSize = FONT_SIZE 
     noteTextBox.Font = Enum.Font.SourceSans
     noteTextBox.BackgroundTransparency = 1
     noteTextBox.TextXAlignment = Enum.TextXAlignment.Left
     noteTextBox.TextYAlignment = Enum.TextYAlignment.Top
     noteTextBox.Parent = noteScrollingFrame
     
+    -- HÀM CẬP NHẬT KÍCH THƯỚC VẢI (CANVAS SIZE) ĐỂ CHO PHÉP CUỘN
     local function updateCanvasSize()
+        -- Kích thước chữ hiện tại
         local textSize = noteTextBox.TextBounds.Y
+        -- Chiều cao cần thiết: Kích thước chữ + một khoảng đệm nhỏ
         local requiredHeight = textSize + 20 
+        -- Chiều cao của khung cuộn
         local frameHeight = noteScrollingFrame.AbsoluteSize.Y
 
         if requiredHeight > frameHeight then
+             -- Nếu nội dung lớn hơn khung, đặt CanvasSize theo nội dung
              noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, requiredHeight)
         else
+             -- Nếu nội dung nhỏ hơn khung, đặt CanvasSize theo khung (để tránh cuộn ngang không cần thiết nếu khung bị thu nhỏ)
              noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, frameHeight)
         end
+        
+        -- Đảm bảo TextBox cao ít nhất bằng khung cuộn hoặc đủ cao cho văn bản
         noteTextBox.Size = UDim2.new(1, 0, 0, math.max(frameHeight, requiredHeight))
-    end
 
+    end
+    
+    -- Cập nhật CanvasSize khi Text thay đổi
     noteTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
+    -- Cập nhật CanvasSize khi kích thước khung cuộn thay đổi
+    noteScrollingFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvasSize)
+    -- Gọi lần đầu
     updateCanvasSize()
     
+    -- THÊM LOGIC LƯU FILE KHI NGƯỜI DÙNG KẾT THÚC NHẬP (Unfocused)
     noteTextBox.FocusLost:Connect(function()
         updateCanvasSize() 
         local contentToSave = noteTextBox.Text:gsub("^Note:\n", "")
@@ -205,7 +219,9 @@ if localPlayer and playerGui then
 
         while true do
             h = h + speed
-            if h > 1 then h = 0 end
+            if h > 1 then 
+                h = 0 
+            end
             
             local colorSequence = ColorSequence.new({
                 ColorSequenceKeypoint.new(0, Color3.fromHSV(h, 1, 1)),
@@ -213,9 +229,7 @@ if localPlayer and playerGui then
                 ColorSequenceKeypoint.new(1, Color3.fromHSV((h + 0.66) % 1, 1, 1))
             })
 
-            -- Cập nhật màu cho cả viền và chữ Credit
             uiGradient.Color = colorSequence
-            creditGradient.Color = colorSequence 
             
             RunService.RenderStepped:Wait() 
         end
