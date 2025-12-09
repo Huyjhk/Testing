@@ -88,22 +88,22 @@ if localPlayer and playerGui then
     uiGradient.Parent = outerFrame
     
     -- === [CHỈNH SỬA] TEXT CREDIT: SCRIPT BY HUYUNFES ===
-    local creditLabel = Instance.new("TextLabel")
+    local creditLabel = Instance.new("TextLabel, MainFrame")
     creditLabel.Name = "CreditLabel"
     creditLabel.Text = "Script by HuyUnfes"
     creditLabel.BackgroundTransparency = 1
     creditLabel.TextSize = 14 
     creditLabel.Font = Enum.Font.SourceSansBold 
     creditLabel.TextColor3 = Color3.new(1, 1, 1) 
-    creditLabel.Size = UDim2.new(0, 0, 0, 15) -- Chiều cao vừa đủ khớp chữ
+    creditLabel.Size = UDim2.new(1, 0, 0, 20) -- Chiều cao vừa đủ khớp chữ
     creditLabel.AutomaticSize = Enum.AutomaticSize.X 
     
     -- Căn chỉnh vị trí MỚI
-    creditLabel.AnchorPoint = Vector2.new(1, 1) -- Neo góc dưới cùng bên phải của chữ
+    creditLabel.AnchorPoint = Vector2.new(0.5, 1) -- Neo góc dưới cùng bên phải của chữ
     -- Giải thích: 
     -- X = 1, -8: Cạnh phải lùi vào 8 pixel (sang trái 1 xíu)
     -- Y = 0, 0: Ngay mép trên cùng của khung (chạm viền)
-    creditLabel.Position = UDim2.new(1, -8, 0, 0) 
+    creditLabel.Position = UDim2.new(0.5, 0, 1, -2) 
     
     creditLabel.Parent = outerFrame 
 
