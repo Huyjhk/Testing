@@ -1,3 +1,5 @@
+getgenv().ShowFPS = true -- [CẤU HÌNH] Đổi thành false nếu muốn tắt FPS
+
 -- Lấy dịch vụ Players, LocalPlayer và RunService
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -51,7 +53,7 @@ if localPlayer and playerGui then
     screenGui.Name = "AnimatedRainbowBorderGUI"
     screenGui.Parent = playerGui
     
-    -- 2. Outer Frame
+    -- 2. Outer Frame (Giữ nguyên kích thước cũ bạn thích)
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
     outerFrame.Size = UDim2.new(0.5, 0, 0.15, 0) 
@@ -90,41 +92,33 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
     innerCorner.Parent = innerFrame
 
-    -- [THAY ĐỔI] Tạo một Frame chứa (Container) để gộp Username và FPS cùng 1 dòng
-    local headerContainer = Instance.new("Frame")
-    headerContainer.Name = "HeaderContainer"
-    headerContainer.Size = UDim2.new(1, -20, 0.2, 0) -- Trừ hao lề
-    headerContainer.BackgroundTransparency = 1
-    headerContainer.Parent = innerFrame
-
-    -- A. Username Label (Nằm bên trái Header)
+    -- A. Username Label (QUAY VỀ CẤU TRÚC CŨ)
     local usernameLabel = Instance.new("TextLabel")
     usernameLabel.Name = "UsernamePart"
-    usernameLabel.Size = UDim2.new(0.7, 0, 1, 0) -- Chiếm 70% bề ngang
-    usernameLabel.Position = UDim2.new(0, 0, 0, 0)
+    usernameLabel.Size = UDim2.new(1, 0, 0.2, 0) -- Chiếm toàn bộ chiều ngang như cũ
     usernameLabel.Text = "Username: " .. obscureUsername(USERNAME) 
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false 
     usernameLabel.TextSize = FONT_SIZE 
     usernameLabel.Font = Enum.Font.SourceSansBold
     usernameLabel.BackgroundTransparency = 1
-    usernameLabel.TextXAlignment = Enum.TextXAlignment.Left -- Căn trái
-    usernameLabel.Parent = headerContainer
+    usernameLabel.TextXAlignment = Enum.TextXAlignment.Center -- Hoặc Left tùy code cũ của bạn, mặc định thường là Center
+    usernameLabel.Parent = innerFrame
 
-    -- [MỚI] FPS Label (Nằm bên phải Header)
+    -- [FPS] Tạo FPS nằm đè lên UsernameLabel nhưng dính sát lề phải
     local fpsLabel = Instance.new("TextLabel")
     fpsLabel.Name = "FPSLabel"
-    fpsLabel.Size = UDim2.new(0.3, 0, 1, 0) -- Chiếm 30% còn lại
-    fpsLabel.Position = UDim2.new(1, 0, 0, 0)
-    fpsLabel.AnchorPoint = Vector2.new(1, 0) -- Neo vào bên phải
+    fpsLabel.Size = UDim2.new(0, 100, 1, 0) 
+    fpsLabel.Position = UDim2.new(1, -10, 0, 0) -- Cách lề phải 10px
+    fpsLabel.AnchorPoint = Vector2.new(1, 0) -- Neo điểm gốc vào bên phải
     fpsLabel.Text = "FPS: 0"
-    fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 127) -- Màu xanh lá SpringGreen
+    fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 127) 
     fpsLabel.TextScaled = false
     fpsLabel.TextSize = FONT_SIZE
     fpsLabel.Font = Enum.Font.SourceSansBold
     fpsLabel.BackgroundTransparency = 1
-    fpsLabel.TextXAlignment = Enum.TextXAlignment.Right -- Căn phải sát viền
-    fpsLabel.Parent = headerContainer
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Right -- Chữ dồn về bên phải
+    fpsLabel.Parent = usernameLabel -- Làm con của Username để đi theo Username
 
     -- B. Note ScrollingFrame
     local noteScrollingFrame = Instance.new("ScrollingFrame")
@@ -182,15 +176,13 @@ if localPlayer and playerGui then
         saveConfig(CONFIG_FILE_NAME, noteTextBox.Text)
     end)
 
-    -- [LOGIC MỚI] Cập nhật FPS
+    -- LOGIC FPS (Giữ nguyên)
     task.spawn(function()
         local lastUpdate = 0
         RunService.RenderStepped:Connect(function(deltaTime)
-            -- Cập nhật mỗi 0.5 giây để tránh nhấp nháy liên tục
             if tick() - lastUpdate >= 0.5 then
                 lastUpdate = tick()
                 if getgenv().ShowFPS then
-                    -- Tính FPS: 1 chia cho thời gian giữa các khung hình
                     local fps = math.floor(1 / deltaTime)
                     fpsLabel.Text = "FPS: " .. fps
                     fpsLabel.Visible = true
