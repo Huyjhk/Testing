@@ -1,16 +1,43 @@
-getgenv().ShowFPS = true -- [CẤU HÌNH] Đổi thành false nếu muốn tắt FPS
+getgenv().ShowFPS = true -- Bật/Tắt hiển thị FPS
+getgenv().HideLeaderboard = true -- [MỚI] Bật/Tắt che tên trên bảng xếp hạng (50%)
 
--- Lấy dịch vụ Players, LocalPlayer và RunService
+-- Lấy dịch vụ
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService") 
 
+-- CẤU HÌNH GIAO DIỆN
 local borderThickness = 3
 local outerCornerRadius = 15
 local transparencyLevel = 0.3
 local FONT_SIZE = 24 
 local NOTE_FONT_SIZE = 30 
+
+-- [UPDATE] Hàm che tên (Xử lý cho cả UI và Leaderboard)
+local function obscureString(str, percent)
+    local len = #str
+    if len <= 3 then return str end -- Tên quá ngắn thì không che
+    
+    local obscurePercent = percent or 0.50 -- Mặc định che 50%
+    local keepPercent = (1 - obscurePercent) / 2 
+    
+    local startKeep = math.floor(len * keepPercent)
+    local endKeep = math.floor(len * keepPercent)
+    
+    -- Đảm bảo ít nhất lộ 1 ký tự đầu/cuối
+    if startKeep < 1 then startKeep = 1 end
+    if endKeep < 1 then endKeep = 1 end
+    
+    local obscureLength = len - startKeep - endKeep
+    if obscureLength < 1 then obscureLength = 1 end
+    
+    local startPart = str:sub(1, startKeep)
+    local endPart = str:sub(len - endKeep + 1, len)
+    local obscurePart = string.rep("*", obscureLength)
+    
+    return startPart .. obscurePart .. endPart
+end
 
 local USERNAME = localPlayer.Name
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
@@ -32,19 +59,6 @@ local function saveConfig(fileName, content)
     end
 end
 
--- Hàm che tên
-local function obscureUsername(username)
-    local len = #username
-    if len <= 5 then return username end 
-    local obscurePercent = 0.40 
-    local keepPercent = (1 - obscurePercent) / 2 
-    local startKeep = math.floor(len * keepPercent)
-    local endKeep = math.floor(len * keepPercent)
-    local obscureLength = len - startKeep - endKeep
-    if obscureLength < 0 then obscureLength = 0 end
-    return username:sub(1, startKeep) .. string.rep("*", obscureLength) .. username:sub(len - endKeep + 1, len)
-end
-
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
 if localPlayer and playerGui then 
@@ -53,10 +67,14 @@ if localPlayer and playerGui then
     screenGui.Name = "AnimatedRainbowBorderGUI"
     screenGui.Parent = playerGui
     
-    -- 2. Outer Frame (Giữ nguyên kích thước cũ bạn thích)
+    -- 2. Outer Frame (Khung ngoài)
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
-    outerFrame.Size = UDim2.new(0.5, 0, 0.15, 0) 
+    
+    -- [UPDATE] Chiều rộng tăng lên 0.7 (70% màn hình) cho rộng rãi
+    -- Nếu bạn muốn to hơn nữa, chỉnh số 0.7 thành số khác (Max là 1.0)
+    outerFrame.Size = UDim2.new(0.7, 0, 0.15, 0) 
+    
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -92,33 +110,33 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
     innerCorner.Parent = innerFrame
 
-    -- A. Username Label (QUAY VỀ CẤU TRÚC CŨ)
+    -- A. Username Label (Giữ vị trí cũ)
     local usernameLabel = Instance.new("TextLabel")
     usernameLabel.Name = "UsernamePart"
-    usernameLabel.Size = UDim2.new(1, 0, 0.2, 0) -- Chiếm toàn bộ chiều ngang như cũ
-    usernameLabel.Text = "Username: " .. obscureUsername(USERNAME) 
+    usernameLabel.Size = UDim2.new(1, 0, 0.2, 0) 
+    usernameLabel.Text = "Username: " .. obscureString(USERNAME, 0.5) -- Che 50%
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false 
     usernameLabel.TextSize = FONT_SIZE 
     usernameLabel.Font = Enum.Font.SourceSansBold
     usernameLabel.BackgroundTransparency = 1
-    usernameLabel.TextXAlignment = Enum.TextXAlignment.Center -- Hoặc Left tùy code cũ của bạn, mặc định thường là Center
+    usernameLabel.TextXAlignment = Enum.TextXAlignment.Center 
     usernameLabel.Parent = innerFrame
 
-    -- [FPS] Tạo FPS nằm đè lên UsernameLabel nhưng dính sát lề phải
+    -- [FPS] Nằm đè lên UsernameLabel nhưng dính sát lề phải
     local fpsLabel = Instance.new("TextLabel")
     fpsLabel.Name = "FPSLabel"
     fpsLabel.Size = UDim2.new(0, 100, 1, 0) 
-    fpsLabel.Position = UDim2.new(1, -10, 0, 0) -- Cách lề phải 10px
-    fpsLabel.AnchorPoint = Vector2.new(1, 0) -- Neo điểm gốc vào bên phải
+    fpsLabel.Position = UDim2.new(1, -15, 0, 0) -- Cách lề phải 15px
+    fpsLabel.AnchorPoint = Vector2.new(1, 0) 
     fpsLabel.Text = "FPS: 0"
     fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 127) 
     fpsLabel.TextScaled = false
     fpsLabel.TextSize = FONT_SIZE
     fpsLabel.Font = Enum.Font.SourceSansBold
     fpsLabel.BackgroundTransparency = 1
-    fpsLabel.TextXAlignment = Enum.TextXAlignment.Right -- Chữ dồn về bên phải
-    fpsLabel.Parent = usernameLabel -- Làm con của Username để đi theo Username
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Right 
+    fpsLabel.Parent = usernameLabel 
 
     -- B. Note ScrollingFrame
     local noteScrollingFrame = Instance.new("ScrollingFrame")
@@ -176,7 +194,7 @@ if localPlayer and playerGui then
         saveConfig(CONFIG_FILE_NAME, noteTextBox.Text)
     end)
 
-    -- LOGIC FPS (Giữ nguyên)
+    -- LOGIC 1: FPS
     task.spawn(function()
         local lastUpdate = 0
         RunService.RenderStepped:Connect(function(deltaTime)
@@ -192,8 +210,30 @@ if localPlayer and playerGui then
             end
         end)
     end)
+
+    -- LOGIC 2: ẨN TÊN TRÊN LEADERBOARD (DisplayName)
+    if getgenv().HideLeaderboard then
+        task.spawn(function()
+            -- Hàm đổi tên hiển thị local
+            local function maskPlayer(player)
+                if player then
+                    -- Chỉ đổi DisplayName (Tên hiển thị trên đầu và Tablist)
+                    -- Che 50% tên gốc
+                    local masked = obscureString(player.Name, 0.50) 
+                    player.DisplayName = masked
+                end
+            end
+
+            -- Quét danh sách người chơi liên tục mỗi 2 giây để cập nhật người mới vào
+            while task.wait(2) do
+                for _, p in pairs(Players:GetPlayers()) do
+                    maskPlayer(p)
+                end
+            end
+        end)
+    end
     
-    -- 5. Hiệu ứng cầu vồng
+    -- LOGIC 3: HIỆU ỨNG CẦU VỒNG
     local function animateRainbowBorder()
         local h = 0 
         local speed = 0.02
