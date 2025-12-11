@@ -2,13 +2,13 @@
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local TextService = game:GetService("TextService") -- Dùng để đo kích thước chữ chuẩn hơn
+local TextService = game:GetService("TextService") 
 
 local borderThickness = 3
 local outerCornerRadius = 15
 local transparencyLevel = 0.3
 local FONT_SIZE = 24 
-local NOTE_FONT_SIZE = 30 -- Font to theo yêu cầu
+local NOTE_FONT_SIZE = 30 
 
 local USERNAME = localPlayer.Name
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
@@ -27,7 +27,6 @@ end
 local function saveConfig(fileName, content)
     if writefile then
         pcall(writefile, fileName, content)
-        print("Đã lưu: " .. fileName)
     end
 end
 
@@ -55,7 +54,7 @@ if localPlayer and playerGui then
     -- 2. Outer Frame
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
-    outerFrame.Size = UDim2.new(0.5, 0, 0.15, 0) -- Tăng chiều cao tổng thể lên một chút để chứa font to
+    outerFrame.Size = UDim2.new(0.5, 0, 0.15, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -71,7 +70,7 @@ if localPlayer and playerGui then
     local uiGradient = Instance.new("UIGradient")
     uiGradient.Parent = outerFrame
     
-    -- 3. Inner Frame (QUAN TRỌNG: ClipsDescendants = true để cắt phần tràn)
+    -- 3. Inner Frame 
     local innerFrame = Instance.new("Frame")
     innerFrame.Name = "InnerBlackBackground"
     innerFrame.Size = UDim2.new(1, -2 * borderThickness, 1, -2 * borderThickness)
@@ -79,7 +78,7 @@ if localPlayer and playerGui then
     innerFrame.AnchorPoint = Vector2.new(0.5, 0.5)
     innerFrame.BackgroundColor3 = Color3.new(0, 0, 0)
     innerFrame.BackgroundTransparency = transparencyLevel
-    innerFrame.ClipsDescendants = true -- [FIX] Chống tràn ra ngoài khung
+    innerFrame.ClipsDescendants = true 
     innerFrame.Parent = outerFrame
     
     local listLayout = Instance.new("UIListLayout")
@@ -91,17 +90,41 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
     innerCorner.Parent = innerFrame
 
-    -- A. Username Label
+    -- [THAY ĐỔI] Tạo một Frame chứa (Container) để gộp Username và FPS cùng 1 dòng
+    local headerContainer = Instance.new("Frame")
+    headerContainer.Name = "HeaderContainer"
+    headerContainer.Size = UDim2.new(1, -20, 0.2, 0) -- Trừ hao lề
+    headerContainer.BackgroundTransparency = 1
+    headerContainer.Parent = innerFrame
+
+    -- A. Username Label (Nằm bên trái Header)
     local usernameLabel = Instance.new("TextLabel")
     usernameLabel.Name = "UsernamePart"
-    usernameLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    usernameLabel.Size = UDim2.new(0.7, 0, 1, 0) -- Chiếm 70% bề ngang
+    usernameLabel.Position = UDim2.new(0, 0, 0, 0)
     usernameLabel.Text = "Username: " .. obscureUsername(USERNAME) 
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false 
     usernameLabel.TextSize = FONT_SIZE 
     usernameLabel.Font = Enum.Font.SourceSansBold
     usernameLabel.BackgroundTransparency = 1
-    usernameLabel.Parent = innerFrame
+    usernameLabel.TextXAlignment = Enum.TextXAlignment.Left -- Căn trái
+    usernameLabel.Parent = headerContainer
+
+    -- [MỚI] FPS Label (Nằm bên phải Header)
+    local fpsLabel = Instance.new("TextLabel")
+    fpsLabel.Name = "FPSLabel"
+    fpsLabel.Size = UDim2.new(0.3, 0, 1, 0) -- Chiếm 30% còn lại
+    fpsLabel.Position = UDim2.new(1, 0, 0, 0)
+    fpsLabel.AnchorPoint = Vector2.new(1, 0) -- Neo vào bên phải
+    fpsLabel.Text = "FPS: 0"
+    fpsLabel.TextColor3 = Color3.fromRGB(0, 255, 127) -- Màu xanh lá SpringGreen
+    fpsLabel.TextScaled = false
+    fpsLabel.TextSize = FONT_SIZE
+    fpsLabel.Font = Enum.Font.SourceSansBold
+    fpsLabel.BackgroundTransparency = 1
+    fpsLabel.TextXAlignment = Enum.TextXAlignment.Right -- Căn phải sát viền
+    fpsLabel.Parent = headerContainer
 
     -- B. Note ScrollingFrame
     local noteScrollingFrame = Instance.new("ScrollingFrame")
@@ -110,28 +133,25 @@ if localPlayer and playerGui then
     noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
     noteScrollingFrame.BackgroundTransparency = 1
     noteScrollingFrame.ScrollBarThickness = 6
-    noteScrollingFrame.ClipsDescendants = true -- [FIX] Đảm bảo chữ cuộn bên trong
+    noteScrollingFrame.ClipsDescendants = true 
     noteScrollingFrame.Parent = innerFrame
 
     -- C. Note TextBox
     local noteTextBox = Instance.new("TextBox")
     noteTextBox.Name = "NoteTextBox"
-    
-    -- [FIX QUAN TRỌNG] Chiều ngang là (1, -15) để trừ hao thanh cuộn, giúp TextWrapped hoạt động đúng
     noteTextBox.Size = UDim2.new(1, -15, 0, 0) 
-    noteTextBox.Position = UDim2.new(0, 5, 0, 0) -- Cách lề trái 5px cho đẹp
+    noteTextBox.Position = UDim2.new(0, 5, 0, 0) 
     
     local currentNote = readConfig(CONFIG_FILE_NAME)
     noteTextBox.Text = currentNote
     
-    -- Placeholder (Chữ mờ)
     noteTextBox.PlaceholderText = "Script by HuyUnfes"
     noteTextBox.PlaceholderColor3 = Color3.new(0.6, 0.6, 0.6)
     
     noteTextBox.TextColor3 = Color3.new(1, 1, 1)
     noteTextBox.TextScaled = false 
     noteTextBox.MultiLine = true    
-    noteTextBox.TextWrapped = true -- Bắt buộc có để xuống dòng
+    noteTextBox.TextWrapped = true 
     noteTextBox.TextSize = NOTE_FONT_SIZE 
     noteTextBox.Font = Enum.Font.SourceSans
     noteTextBox.BackgroundTransparency = 1
@@ -139,36 +159,46 @@ if localPlayer and playerGui then
     noteTextBox.TextYAlignment = Enum.TextYAlignment.Top
     noteTextBox.Parent = noteScrollingFrame
     
-    -- HÀM CẬP NHẬT CHUẨN XÁC
     local function updateCanvasSize()
-        -- Tính toán chiều cao thực tế của văn bản dựa trên độ rộng hiện tại
         local textBounds = TextService:GetTextSize(
             noteTextBox.Text,
             NOTE_FONT_SIZE,
             Enum.Font.SourceSans,
-            Vector2.new(noteScrollingFrame.AbsoluteSize.X - 20, 10000) -- Trừ hao độ rộng để tính toán xuống dòng
+            Vector2.new(noteScrollingFrame.AbsoluteSize.X - 20, 10000) 
         )
-        
-        local requiredHeight = textBounds.Y + 30 -- Thêm chút khoảng trống dưới cùng
+        local requiredHeight = textBounds.Y + 30 
         local frameHeight = noteScrollingFrame.AbsoluteSize.Y
-
-        -- Cập nhật CanvasSize
         noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, math.max(requiredHeight, frameHeight))
-        
-        -- Cập nhật chiều cao TextBox bằng với Canvas để dễ nhập liệu
         noteTextBox.Size = UDim2.new(1, -15, 0, math.max(requiredHeight, frameHeight))
     end
 
     noteTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
-    noteTextBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvasSize) -- Cập nhật khi thay đổi kích thước khung
+    noteTextBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvasSize) 
     
-    -- Gọi update lần đầu sau 1 khoảng nhỏ để UI load xong
     task.delay(0.1, updateCanvasSize)
     
-    -- Logic lưu file
     noteTextBox.FocusLost:Connect(function()
         updateCanvasSize() 
         saveConfig(CONFIG_FILE_NAME, noteTextBox.Text)
+    end)
+
+    -- [LOGIC MỚI] Cập nhật FPS
+    task.spawn(function()
+        local lastUpdate = 0
+        RunService.RenderStepped:Connect(function(deltaTime)
+            -- Cập nhật mỗi 0.5 giây để tránh nhấp nháy liên tục
+            if tick() - lastUpdate >= 0.5 then
+                lastUpdate = tick()
+                if getgenv().ShowFPS then
+                    -- Tính FPS: 1 chia cho thời gian giữa các khung hình
+                    local fps = math.floor(1 / deltaTime)
+                    fpsLabel.Text = "FPS: " .. fps
+                    fpsLabel.Visible = true
+                else
+                    fpsLabel.Visible = false
+                end
+            end
+        end)
     end)
     
     -- 5. Hiệu ứng cầu vồng
@@ -188,5 +218,10 @@ if localPlayer and playerGui then
     end
     task.spawn(animateRainbowBorder)
     
-    print("Fix lỗi tràn chữ + Font to + Placeholder hoàn tất.")
+    print([[
+|     |  |\    |  |''''  |''''  /''''\
+|     |  | \   |  |___   |___   \____
+|     |  |  \  |  |      |           \
+\_____/  |   \ |  |      |____  \____/
+    ]])
 end
