@@ -56,7 +56,7 @@ if localPlayer and playerGui then
     -- 2. Outer Frame (Giữ nguyên kích thước cũ bạn thích)
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
-    outerFrame.Size = UDim2.new(0.5, 0, 0.2, 0) 
+    outerFrame.Size = UDim2.new(0.5, 0, 0.15, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
