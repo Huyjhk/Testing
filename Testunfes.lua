@@ -1,262 +1,215 @@
--- ===============================================
---          HuyUnfess Custom Note Box GUI
--- ===============================================
-
 -- Lấy dịch vụ Players, LocalPlayer và RunService
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local TextService = game:GetService("TextService") -- Dùng để tính toán kích thước văn bản
 
--- CẤU HÌNH GIAO DIỆN
 local borderThickness = 3
 local outerCornerRadius = 15
 local transparencyLevel = 0.3
-local FONT_SIZE = 30 -- Kích thước font chữ đã tăng
-local PLACEHOLDER_TEXT = "Script by HuyUnfes" -- Chữ mờ yêu cầu
+local FONT_SIZE = 24 -- Kích thước cho Username
+local NOTE_FONT_SIZE = 30 -- Kích thước LỚN HƠN cho phần Note
 
 local USERNAME = localPlayer.Name
+-- TÊN FILE CONFIG: Lưu theo tên người dùng Roblox (ví dụ: user_name.txt)
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
 
--- Màu chữ mặc định và chữ mờ
-local DefaultTextColor = Color3.new(1, 1, 1) -- Màu trắng
-local PlaceholderColor = Color3.new(0.5, 0.5, 0.5) -- Màu xám mờ
-
--- ===============================================
---          CHỨC NĂNG ĐỌC/LƯU FILE
--- ===============================================
-
+-- Hàm giả định để đọc/lưu nội dung file
 local function readConfig(fileName)
     if readfile then
         local success, content = pcall(readfile, fileName)
-        if success and content and content ~= "" and content ~= PLACEHOLDER_TEXT then
+        if success and content and content ~= "" then
             return content
         end
     end
-    return PLACEHOLDER_TEXT
+    return "" -- Trả về rỗng thay vì text mặc định để hiển thị Placeholder
 end
 
 local function saveConfig(fileName, content)
-    -- Chỉ lưu nếu nội dung KHÔNG phải là chữ mờ và không trống
-    if content ~= PLACEHOLDER_TEXT and content ~= "" then
-        if writefile then
-            pcall(writefile, fileName, content)
-            print("Đã lưu nội dung vào: " .. fileName)
-        else
-            warn("Không thể lưu file. Hàm writefile không khả dụng.")
-        end
+    if writefile then
+        pcall(writefile, fileName, content)
+        print("Đã lưu nội dung vào: " .. fileName)
     else
-        -- Xóa file nếu nội dung là chữ mờ hoặc trống
-        if delfile then
-             pcall(delfile, fileName)
-             print("Đã xóa file config trống: " .. fileName)
-        end
+        warn("Không thể lưu file. Hàm writefile không khả dụng.")
     end
 end
 
--- HÀM CHE TÊN (Obscure Username)
+-- HÀM CHE 60% TÊN
 local function obscureUsername(username)
     local len = #username
     if len <= 5 then return username end 
 
-    local obscurePercent = 0.60 
-    local keepLength = math.floor(len * (1 - obscurePercent))
-    local startKeep = math.floor(keepLength / 2)
-    local endKeep = len - math.ceil(keepLength / 2)
+    local obscurePercent = 0.40 
+    local keepPercent = (1 - obscurePercent) / 2 
 
-    local prefix = username:sub(1, startKeep)
-    local suffix = username:sub(endKeep + 1)
-    local obscurePart = string.rep("*", len - startKeep - (len - endKeep))
+    local startKeep = math.floor(len * keepPercent)
+    local endKeep = math.floor(len * keepPercent)
+    local obscureLength = len - startKeep - endKeep
+
+    if obscureLength < 0 then
+        obscureLength = 0
+    end
     
-    return prefix .. obscurePart .. suffix
+    local startPart = username:sub(1, startKeep)
+    local endPart = username:sub(len - endKeep + 1, len)
+    
+    local obscureString = string.rep("*", obscureLength)
+
+    return startPart .. obscureString .. endPart
 end
 
--- ===============================================
---          KHỞI TẠO GIAO DIỆN (GUI)
--- ===============================================
+local playerGui = localPlayer:WaitForChild("PlayerGui")
 
--- 1. TẠO SCREEN GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HuyUnfesNoteBoxGUI"
-ScreenGui.Parent = localPlayer:WaitForChild("PlayerGui")
-
--- 2. KHUNG CHÍNH (FRAME)
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "NoteBoxFrame"
-mainFrame.Size = UDim2.new(0.3, 0, 0.45, 0) 
-mainFrame.Position = UDim2.new(0.5, 0, 0.4, 0) 
-mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-mainFrame.BackgroundColor3 = Color3.new(0.05, 0.05, 0.05)
-mainFrame.BackgroundTransparency = transparencyLevel
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = ScreenGui
-
-local UICornerMain = Instance.new("UICorner")
-UICornerMain.CornerRadius = UDim.new(0, outerCornerRadius)
-UICornerMain.Parent = mainFrame
-
--- 3. KHU VỰC GHI CHÚ (NOTE BOX)
-local noteScrollingFrame = Instance.new("ScrollingFrame")
-noteScrollingFrame.Name = "NoteScroll"
-noteScrollingFrame.Size = UDim2.new(1, -borderThickness*2, 1, -borderThickness*2 - 40) 
-noteScrollingFrame.Position = UDim2.new(0, borderThickness, 40, borderThickness) 
-noteScrollingFrame.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-noteScrollingFrame.BackgroundTransparency = 0.1
-noteScrollingFrame.BorderSizePixel = 0
-noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
-noteScrollingFrame.ScrollBarThickness = 6
-noteScrollingFrame.Parent = mainFrame
-
-local UICornerScroll = Instance.new("UICorner")
-UICornerScroll.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
-UICornerScroll.Parent = noteScrollingFrame
-
--- Text Box chứa nội dung ghi chú
-local noteTextBox = Instance.new("TextBox")
-noteTextBox.Name = "NoteContent"
-noteTextBox.Parent = noteScrollingFrame
-noteTextBox.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)
-noteTextBox.Size = UDim2.new(1, 0, 1, 0) 
-noteTextBox.Position = UDim2.new(0, 0, 0, 0)
-noteTextBox.Text = readConfig(CONFIG_FILE_NAME) 
-
-noteTextBox.PlaceholderText = PLACEHOLDER_TEXT 
-noteTextBox.PlaceholderColor3 = PlaceholderColor 
-noteTextBox.TextSize = FONT_SIZE 
-noteTextBox.Font = Enum.Font.Code 
-noteTextBox.TextXAlignment = Enum.TextXAlignment.Left
-noteTextBox.TextYAlignment = Enum.TextYAlignment.Top
-noteTextBox.MultiLine = true
-noteTextBox.TextWrapped = true 
-noteTextBox.ClearTextOnFocus = false 
-
--- Quản lý màu chữ ban đầu
-if noteTextBox.Text == PLACEHOLDER_TEXT then
-    noteTextBox.TextColor3 = PlaceholderColor
-else
-    noteTextBox.TextColor3 = DefaultTextColor
-end
-
--- 4. TIÊU ĐỀ (HEADER)
-local headerFrame = Instance.new("Frame")
-headerFrame.Name = "Header"
-headerFrame.Size = UDim2.new(1, 0, 0, 40) 
-headerFrame.BackgroundColor3 = Color3.new(0.08, 0.08, 0.08)
-headerFrame.BackgroundTransparency = transparencyLevel / 2
-headerFrame.BorderSizePixel = 0
-headerFrame.Parent = mainFrame
-
-local headerText = Instance.new("TextLabel")
-headerText.Name = "Title"
-headerText.Size = UDim2.new(1, 0, 1, 0)
-headerText.BackgroundTransparency = 1
-headerText.Font = Enum.Font.SourceSansBold
-headerText.TextSize = 20
-headerText.TextColor3 = Color3.new(1, 1, 1)
-headerText.Text = "📝 Note Box - User: " .. obscureUsername(USERNAME) 
-headerText.Parent = headerFrame
-
--- ===============================================
---          LOGIC TƯƠNG TÁC
--- ===============================================
-
--- HÀM CẬP NHẬT KÍCH THƯỚC CANVAS ĐỂ CUỘN (SCROLLING)
-local function updateCanvasSize()
+if localPlayer and playerGui then 
+    -- 1. Cấu hình ScreenGui
+    local screenGui = Instance.new("ScreenGui")
+    screenGui.Name = "AnimatedRainbowBorderGUI"
+    screenGui.Parent = playerGui
     
-    -- SỬA LỖI KHỞI TẠO: Kiểm tra an toàn trước khi truy cập kích thước tuyệt đối
-    if noteScrollingFrame.AbsoluteSize.X == 0 then
-        return 
-    end
+    -- 2. TẠO FRAME NGOÀI (OUTER FRAME)
+    local outerFrame = Instance.new("Frame")
+    outerFrame.Name = "RainbowBorderFrame"
+    outerFrame.Size = UDim2.new(0.5, 0, 0.125, 0) 
+    outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
+    outerFrame.AnchorPoint = Vector2.new(0.5, 0)
+    outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
+    outerFrame.BorderSizePixel = 0
+    outerFrame.BackgroundTransparency = transparencyLevel
+    outerFrame.Parent = screenGui
     
-    local text = noteTextBox.Text
-    local frameWidth = noteScrollingFrame.AbsoluteSize.X
-    local frameHeight = noteScrollingFrame.AbsoluteSize.Y
+    -- KÉO THẢ (DRAGGABLE)
+    outerFrame.Active = true 
+    outerFrame.Draggable = true 
+
+    local outerCorner = Instance.new("UICorner")
+    outerCorner.CornerRadius = UDim.new(0, outerCornerRadius)
+    outerCorner.Parent = outerFrame
+
+    local uiGradient = Instance.new("UIGradient")
+    uiGradient.Rotation = 0
+    uiGradient.Parent = outerFrame
     
-    -- Thiết lập chiều cao tối thiểu là chiều cao của Frame
-    local requiredHeight = frameHeight 
-
-    -- Nếu có nội dung (bao gồm cả chữ mờ)
-    if text ~= "" then
-        
-        -- Sử dụng GetTextSize để tính toán chiều cao cần thiết
-        local textBounds = TextService:GetTextSize(
-            text,
-            FONT_SIZE, 
-            noteTextBox.Font,
-            Vector2.new(frameWidth - 6, 10000) -- Trừ padding/scrollbar nhỏ
-        )
-        
-        requiredHeight = textBounds.Y + 10 
-    end
+    -- 3. TẠO FRAME TRONG (INNER FRAME) - NỀN ĐEN VÀ BỐ CỤC CHÍNH
+    local innerFrame = Instance.new("Frame")
+    innerFrame.Name = "InnerBlackBackground"
+    innerFrame.Size = UDim2.new(1, -2 * borderThickness, 1, -2 * borderThickness)
+    innerFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    innerFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+    innerFrame.BackgroundColor3 = Color3.new(0, 0, 0)
+    innerFrame.BorderSizePixel = 0
+    innerFrame.BackgroundTransparency = transparencyLevel
+    innerFrame.Parent = outerFrame
     
-    -- HỢP NHẤT LOGIC CẬP NHẬT (Sửa lỗi logic tính toán Dòng 185)
+    -- UIListLayout ĐỂ SẮP XẾP CÁC PHẦN DỌC (USERNAME trên, NOTE dưới)
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.Padding = UDim.new(0, 5) 
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    listLayout.Parent = innerFrame
+
+    local innerCorner = Instance.new("UICorner")
+    local innerRadius = outerCornerRadius - borderThickness
+    innerCorner.CornerRadius = UDim.new(0, innerRadius) 
+    innerCorner.Parent = innerFrame
+
+    -- A. PHẦN USERNAME (TEXTLABEL)
+    local usernameLabel = Instance.new("TextLabel")
+    usernameLabel.Name = "UsernamePart"
+    usernameLabel.Size = UDim2.new(1, 0, 0.2, 0)
+    usernameLabel.Text = "Username: " .. obscureUsername(USERNAME) 
+    usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
+    usernameLabel.TextScaled = false 
+    usernameLabel.TextSize = FONT_SIZE 
+    usernameLabel.Font = Enum.Font.SourceSansBold
+    usernameLabel.BackgroundTransparency = 1
+    usernameLabel.TextYAlignment = Enum.TextYAlignment.Top 
+    usernameLabel.Parent = innerFrame
+
+    -- B. PHẦN NOTE (SCROLLINGFRAME)
+    local noteScrollingFrame = Instance.new("ScrollingFrame")
+    noteScrollingFrame.Name = "NoteScrollingFrame"
+    noteScrollingFrame.Size = UDim2.new(1, 0, 0.75, 0) 
+    noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
+    noteScrollingFrame.BackgroundTransparency = 1
+    noteScrollingFrame.ScrollBarThickness = 6
+    noteScrollingFrame.Parent = innerFrame
+
+    -- TẠO TEXTBOX BÊN TRONG SCROLLING FRAME
+    local noteTextBox = Instance.new("TextBox")
+    noteTextBox.Name = "NoteTextBox"
+    noteTextBox.Size = UDim2.new(1, 0, 2, 0) 
     
-    -- Đảm bảo CanvasSize và TextBox Size tối thiểu là Frame Height
-    local finalCanvasHeight = math.max(frameHeight, requiredHeight)
+    -- [CHỈNH SỬA] Tải nội dung đã lưu (Không thêm chữ Note: nữa)
+    local currentNote = readConfig(CONFIG_FILE_NAME)
+    noteTextBox.Text = currentNote
     
-    -- 1. Cập nhật CanvasSize để cho phép cuộn
-    noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, finalCanvasHeight)
-
-    -- 2. Cập nhật Size của TextBox bằng với CanvasSize height
-    noteTextBox.Size = UDim2.new(1, 0, 0, finalCanvasHeight)
-end
-
--- KẾT NỐI SỰ KIỆN
-
-noteTextBox.Focused:Connect(function()
-    if noteTextBox.Text == PLACEHOLDER_TEXT then
-        noteTextBox.Text = "" -- Xóa chữ mờ
-        noteTextBox.TextColor3 = DefaultTextColor -- Đổi sang màu trắng
-    end
-end)
-
-noteTextBox.FocusLost:Connect(function()
-    if noteTextBox.Text == "" then
-        noteTextBox.Text = PLACEHOLDER_TEXT -- Khôi phục chữ mờ
-        noteTextBox.TextColor3 = PlaceholderColor -- Đổi sang màu xám mờ
-    else
-        noteTextBox.TextColor3 = DefaultTextColor -- Đảm bảo là màu trắng
-    end
+    -- [CHỈNH SỬA] Thêm Placeholder (Chữ mờ)
+    noteTextBox.PlaceholderText = "Script by HuyUnfes"
+    noteTextBox.PlaceholderColor3 = Color3.new(0.7, 0.7, 0.7) -- Màu xám mờ
     
-    updateCanvasSize() 
-    local contentToSave = noteTextBox.Text
-    saveConfig(CONFIG_FILE_NAME, contentToSave) 
-end)
-
--- Kết nối sự kiện thay đổi Text
-noteTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
-
--- Khắc phục lỗi khởi tạo (Sửa lỗi Dòng 170)
-task.wait(0.1) 
-updateCanvasSize() 
+    noteTextBox.TextColor3 = Color3.new(1, 1, 1)
+    noteTextBox.TextScaled = false 
+    noteTextBox.MultiLine = true    
+    noteTextBox.TextWrapped = true 
     
-print("Đã tải config cá nhân (" .. CONFIG_FILE_NAME .. "). Giao diện đã sẵn sàng.")
+    -- [CHỈNH SỬA] Tăng kích thước font chữ cho phần Note
+    noteTextBox.TextSize = NOTE_FONT_SIZE 
+    
+    noteTextBox.Font = Enum.Font.SourceSans
+    noteTextBox.BackgroundTransparency = 1
+    noteTextBox.TextXAlignment = Enum.TextXAlignment.Left
+    noteTextBox.TextYAlignment = Enum.TextYAlignment.Top
+    noteTextBox.Parent = noteScrollingFrame
+    
+    -- HÀM CẬP NHẬT KÍCH THƯỚC VẢI (CANVAS SIZE) ĐỂ CHO PHÉP CUỘN
+    local function updateCanvasSize()
+        local textSize = noteTextBox.TextBounds.Y
+        local requiredHeight = textSize + 20 
+        local frameHeight = noteScrollingFrame.AbsoluteSize.Y
 
--- 5. HÀM TẠO HIỆU ỨNG CẦU VỒNG LIÊN TỤC (RAINBOW BORDER)
-local function animateRainbowBorder()
-    local h = 0 
-    local speed = 0.02
-    local UIGradient = Instance.new("UIGradient")
-    UIGradient.Parent = headerFrame
-
-    while mainFrame.Parent do
-        h = h + speed
-        if h > 1 then 
-            h = 0 
+        if requiredHeight > frameHeight then
+             noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, requiredHeight)
+        else
+             noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, frameHeight)
         end
         
-        local colorSequence = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromHSV(h, 1, 1)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromHSV(math.fmod(h + 0.5, 1), 1, 1)),
-            ColorSequenceKeypoint.new(1, Color3.fromHSV(h, 1, 1))
-        })
-        
-        UIGradient.Color = colorSequence
-        UIGradient.Rotation = 90
-        
-        RunService.Heartbeat:Wait()
-    end
-end
+        noteTextBox.Size = UDim2.new(1, 0, 0, math.max(frameHeight, requiredHeight))
 
--- Chạy hiệu ứng cầu vồng
-spawn(animateRainbowBorder)
+    end
+
+    noteTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
+    updateCanvasSize()
+    
+    -- THÊM LOGIC LƯU FILE KHI NGƯỜI DÙNG KẾT THÚC NHẬP (Unfocused)
+    noteTextBox.FocusLost:Connect(function()
+        updateCanvasSize() 
+        -- [CHỈNH SỬA] Lưu trực tiếp nội dung, không cần xóa chữ "Note:" nữa
+        local contentToSave = noteTextBox.Text
+        saveConfig(CONFIG_FILE_NAME, contentToSave)
+    end)
+    
+    print("Đã tải config cá nhân (" .. CONFIG_FILE_NAME .. "). UI đã được chỉnh sửa Font và Placeholder.")
+
+    -- 5. HÀM TẠO HIỆU ỨNG CẦU VỒNG LIÊN TỤC
+    local function animateRainbowBorder()
+        local h = 0 
+        local speed = 0.02
+
+        while true do
+            h = h + speed
+            if h > 1 then 
+                h = 0 
+            end
+            
+            local colorSequence = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromHSV(h, 1, 1)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromHSV((h + 0.33) % 1, 1, 1)),
+                ColorSequenceKeypoint.new(1, Color3.fromHSV((h + 0.66) % 1, 1, 1))
+            })
+
+            uiGradient.Color = colorSequence
+            
+            RunService.RenderStepped:Wait() 
+        end
+    end
+    
+    task.spawn(animateRainbowBorder)
+end
