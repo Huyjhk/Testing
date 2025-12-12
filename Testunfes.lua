@@ -1,10 +1,11 @@
 getgenv().ShowFPS = true 
-getgenv().HideLeaderboard = true -- Bật true để che tên trên Tab Leaderboard
+getgenv().HideLeaderboard = true -- [ON] Chỉ che tên trên Bảng Xếp Hạng (Tab)
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService") 
+local CoreGui = game:GetService("CoreGui")
 
 local borderThickness = 3
 local outerCornerRadius = 15
@@ -12,15 +13,14 @@ local transparencyLevel = 0.3
 local FONT_SIZE = 24 
 local NOTE_FONT_SIZE = 30 
 
--- HÀM CHE TÊN (Giữ lại đầu và đuôi, che giữa)
+-- [HÀM XỬ LÝ CHUỖI] Che 50% ký tự ở giữa
 local function generateMaskedName(str)
     local len = #str
     if len <= 3 then return str end 
-    local obscureLength = math.ceil(len / 2) -- Che 50%
+    local obscureLength = math.ceil(len / 2) 
     local visibleLen = len - obscureLength
     local startLen = math.ceil(visibleLen / 2)
     local endLen = visibleLen - startLen
-    
     return str:sub(1, startLen) .. string.rep("*", obscureLength) .. str:sub(len - endLen + 1, len)
 end
 
@@ -43,15 +43,17 @@ end
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
 if localPlayer and playerGui then 
-    -- 1. SETUP GUI
+    -- ==========================================
+    -- PHẦN 1: GIAO DIỆN SCRIPT (CUSTOM GUI)
+    -- ==========================================
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AnimatedRainbowBorderGUI"
     screenGui.Parent = playerGui
     
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
-    -- Chiều rộng để 0.8 (80% màn hình) là rất rộng rồi, 1.15 sẽ bị tràn ra ngoài màn hình
-    outerFrame.Size = UDim2.new(0.8, 0, 0.15, 0) 
+    -- Kích thước chuẩn 0.65 để không bị quá to che mất màn hình
+    outerFrame.Size = UDim2.new(0.65, 0, 0.15, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -86,7 +88,7 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
     innerCorner.Parent = innerFrame
 
-    -- HEADER: USERNAME + FPS
+    -- [HEADER] USERNAME (TRÁI) - FPS (PHẢI)
     local headerFrame = Instance.new("Frame")
     headerFrame.Name = "HeaderFrame"
     headerFrame.Size = UDim2.new(1, -20, 0.25, 0)
@@ -119,7 +121,7 @@ if localPlayer and playerGui then
     fpsLabel.TextXAlignment = Enum.TextXAlignment.Right 
     fpsLabel.Parent = headerFrame
 
-    -- NOTE AREA
+    -- [BODY] NOTE AREA
     local noteScrollingFrame = Instance.new("ScrollingFrame")
     noteScrollingFrame.Size = UDim2.new(1, 0, 0.65, 0) 
     noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
@@ -156,7 +158,6 @@ if localPlayer and playerGui then
     task.delay(0.1, updateCanvasSize)
     noteTextBox.FocusLost:Connect(function() saveConfig(CONFIG_FILE_NAME, noteTextBox.Text) end)
 
-    -- UPDATE FPS
     task.spawn(function()
         local lastUpdate = 0
         RunService.RenderStepped:Connect(function(deltaTime)
@@ -171,41 +172,50 @@ if localPlayer and playerGui then
         end)
     end)
 
-    -- [SỬA LẠI] LOGIC CHE TÊN TAB LEADERBOARD (Chỉ đổi DisplayName)
+    -- ==========================================
+    -- PHẦN 2: CHE TÊN LEADERBOARD (AN TOÀN)
+    -- ==========================================
+    -- Logic: Chỉ tìm đúng folder "PlayerList" trong CoreGui để đổi tên
+    -- Không đụng vào Chat, không đụng vào Menu kiểm tra
     if getgenv().HideLeaderboard then
         task.spawn(function()
-            local function maskPlayer(player)
-                -- Không che tên bản thân nếu không muốn, hoặc che luôn tùy bạn
-                -- if player == localPlayer then return end 
-                
-                local originalName = player.Name
-                local masked = generateMaskedName(originalName)
-                
-                -- Đổi tên hiển thị (Cách này tự động cập nhật Leaderboard và Tên trên đầu)
-                -- Mà không ảnh hưởng UI game
-                pcall(function()
-                    player.DisplayName = masked
-                end)
-                
-                -- Lắng nghe nếu game tự đổi lại thì mình đổi tiếp
-                player:GetPropertyChangedSignal("DisplayName"):Connect(function()
-                    if player.DisplayName ~= masked then
-                        player.DisplayName = masked
-                    end
-                end)
+            -- Tạo danh sách map tên thật -> tên giả
+            local NameMap = {}
+            local function RefreshNameMap()
+                for _, p in pairs(Players:GetPlayers()) do
+                    NameMap[p.Name] = generateMaskedName(p.Name)
+                    NameMap[p.DisplayName] = generateMaskedName(p.DisplayName)
+                end
             end
+            Players.PlayerAdded:Connect(RefreshNameMap)
+            RefreshNameMap()
 
-            -- Áp dụng cho người chơi hiện tại
-            for _, p in pairs(Players:GetPlayers()) do
-                maskPlayer(p)
+            -- Vòng lặp quét nhẹ nhàng (1 giây 1 lần)
+            while task.wait(1) do
+                local success, playerList = pcall(function() 
+                    return CoreGui:FindFirstChild("PlayerList") 
+                end)
+
+                if success and playerList then
+                    -- Chỉ quét trong PlayerList (Bảng Tab)
+                    for _, obj in pairs(playerList:GetDescendants()) do
+                        if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+                            for real, masked in pairs(NameMap) do
+                                -- Nếu tìm thấy tên thật thì đổi thành tên giả
+                                if obj.Text == real or obj.Text:find(real) then
+                                    -- Kiểm tra nếu chưa bị che
+                                    if not obj.Text:find("*") then
+                                        obj.Text = obj.Text:gsub(real, masked)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
             end
-            
-            -- Áp dụng cho người chơi mới vào
-            Players.PlayerAdded:Connect(maskPlayer)
         end)
     end
     
-    -- RAINBOW
     local function animateRainbowBorder()
         local h = 0 
         while true do
@@ -227,4 +237,4 @@ if localPlayer and playerGui then
 \_____/  |   \ |  |      |____  \____/
     ]])
 end
--- hi
+-- test.lua
