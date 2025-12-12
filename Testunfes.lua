@@ -1,10 +1,10 @@
 getgenv().ShowFPS = true 
-getgenv().HideLeaderboard = true -- Bật cái này để che tên trên Bảng xếp hạng gốc
+getgenv().HideLeaderboard = true -- Bật true để che tên trên Tab Leaderboard
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local CoreGui = game:GetService("CoreGui")
+local TextService = game:GetService("TextService") 
 
 local borderThickness = 3
 local outerCornerRadius = 15
@@ -12,7 +12,7 @@ local transparencyLevel = 0.3
 local FONT_SIZE = 24 
 local NOTE_FONT_SIZE = 30 
 
--- HÀM TẠO TÊN CHE (ẩn 50%)
+-- HÀM CHE TÊN (Giữ lại đầu và đuôi, che giữa)
 local function generateMaskedName(str)
     local len = #str
     if len <= 3 then return str end 
@@ -28,7 +28,7 @@ local USERNAME = localPlayer.Name
 local MASKED_USERNAME = generateMaskedName(USERNAME)
 local CONFIG_FILE_NAME = USERNAME .. ".txt" 
 
--- Hàm đọc/lưu file
+-- Đọc/Lưu file
 local function readConfig(fileName)
     if readfile then
         local success, content = pcall(readfile, fileName)
@@ -36,7 +36,6 @@ local function readConfig(fileName)
     end
     return "" 
 end
-
 local function saveConfig(fileName, content)
     if writefile then pcall(writefile, fileName, content) end
 end
@@ -44,15 +43,15 @@ end
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
 if localPlayer and playerGui then 
-    -- 1. TẠO GUI
+    -- 1. SETUP GUI
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AnimatedRainbowBorderGUI"
     screenGui.Parent = playerGui
     
-    -- Khung ngoài (Outer)
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
-    outerFrame.Size = UDim2.new(0.65, 0, 0.15, 0) -- Chiều rộng 65% màn hình
+    -- Chiều rộng để 0.8 (80% màn hình) là rất rộng rồi, 1.15 sẽ bị tràn ra ngoài màn hình
+    outerFrame.Size = UDim2.new(0.8, 0, 0.15, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -68,7 +67,6 @@ if localPlayer and playerGui then
     local uiGradient = Instance.new("UIGradient")
     uiGradient.Parent = outerFrame
     
-    -- Khung trong (Inner)
     local innerFrame = Instance.new("Frame")
     innerFrame.Name = "InnerBlackBackground"
     innerFrame.Size = UDim2.new(1, -2 * borderThickness, 1, -2 * borderThickness)
@@ -88,17 +86,16 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
     innerCorner.Parent = innerFrame
 
-    -- A. Username Label 
+    -- HEADER: USERNAME + FPS
     local headerFrame = Instance.new("Frame")
     headerFrame.Name = "HeaderFrame"
-    headerFrame.Size = UDim2.new(1, -20, 0.25, 0) -- Header cao hơn chút
+    headerFrame.Size = UDim2.new(1, -20, 0.25, 0)
     headerFrame.BackgroundTransparency = 1
     headerFrame.Parent = innerFrame
 
     local usernameLabel = Instance.new("TextLabel")
     usernameLabel.Name = "UsernameLabel"
     usernameLabel.Size = UDim2.new(0.7, 0, 1, 0)
-    usernameLabel.Position = UDim2.new(0, 0, 0, 0)
     usernameLabel.Text = "User: " .. MASKED_USERNAME 
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false
@@ -122,7 +119,7 @@ if localPlayer and playerGui then
     fpsLabel.TextXAlignment = Enum.TextXAlignment.Right 
     fpsLabel.Parent = headerFrame
 
-    -- B. Note Area
+    -- NOTE AREA
     local noteScrollingFrame = Instance.new("ScrollingFrame")
     noteScrollingFrame.Size = UDim2.new(1, 0, 0.65, 0) 
     noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
@@ -148,7 +145,6 @@ if localPlayer and playerGui then
     noteTextBox.TextYAlignment = Enum.TextYAlignment.Top
     noteTextBox.Parent = noteScrollingFrame
     
-    -- Auto Resize Note
     local function updateCanvasSize()
         local textBounds = TextService:GetTextSize(noteTextBox.Text, NOTE_FONT_SIZE, Enum.Font.SourceSans, Vector2.new(noteScrollingFrame.AbsoluteSize.X - 20, 10000))
         local h = math.max(textBounds.Y + 30, noteScrollingFrame.AbsoluteSize.Y)
@@ -160,7 +156,7 @@ if localPlayer and playerGui then
     task.delay(0.1, updateCanvasSize)
     noteTextBox.FocusLost:Connect(function() saveConfig(CONFIG_FILE_NAME, noteTextBox.Text) end)
 
-    -- LOGIC FPS
+    -- UPDATE FPS
     task.spawn(function()
         local lastUpdate = 0
         RunService.RenderStepped:Connect(function(deltaTime)
@@ -175,52 +171,41 @@ if localPlayer and playerGui then
         end)
     end)
 
-    -- LOGIC MỚI: CHE TÊN "HARDCORE" (Quét toàn bộ UI kể cả Leaderboard gốc)
+    -- [SỬA LẠI] LOGIC CHE TÊN TAB LEADERBOARD (Chỉ đổi DisplayName)
     if getgenv().HideLeaderboard then
         task.spawn(function()
-            local PlayerMap = {} -- Cache tên để tối ưu
-
-            local function updatePlayerMap()
-                for _, p in pairs(Players:GetPlayers()) do
-                    if not PlayerMap[p.Name] then
-                        PlayerMap[p.Name] = generateMaskedName(p.Name)
-                        PlayerMap[p.DisplayName] = generateMaskedName(p.DisplayName) -- Che cả DisplayName
+            local function maskPlayer(player)
+                -- Không che tên bản thân nếu không muốn, hoặc che luôn tùy bạn
+                -- if player == localPlayer then return end 
+                
+                local originalName = player.Name
+                local masked = generateMaskedName(originalName)
+                
+                -- Đổi tên hiển thị (Cách này tự động cập nhật Leaderboard và Tên trên đầu)
+                -- Mà không ảnh hưởng UI game
+                pcall(function()
+                    player.DisplayName = masked
+                end)
+                
+                -- Lắng nghe nếu game tự đổi lại thì mình đổi tiếp
+                player:GetPropertyChangedSignal("DisplayName"):Connect(function()
+                    if player.DisplayName ~= masked then
+                        player.DisplayName = masked
                     end
-                end
+                end)
+            end
+
+            -- Áp dụng cho người chơi hiện tại
+            for _, p in pairs(Players:GetPlayers()) do
+                maskPlayer(p)
             end
             
-            -- Hàm đệ quy quét và đổi text
-            local function scanAndHide(obj)
-                if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-                    for realName, maskedName in pairs(PlayerMap) do
-                        if obj.Text:find(realName) and not obj.Text:find("*") then
-                            obj.Text = obj.Text:gsub(realName, maskedName)
-                        end
-                    end
-                end
-                for _, child in pairs(obj:GetChildren()) do
-                    scanAndHide(child)
-                end
-            end
-
-            updatePlayerMap()
-            Players.PlayerAdded:Connect(updatePlayerMap)
-
-            -- Vòng lặp quét UI mỗi 1 giây (Để không lag)
-            while task.wait(0.5) do
-                -- Quét CoreGui (Nơi chứa Leaderboard gốc và Menu)
-                local success, core = pcall(function() return game:GetService("CoreGui") end)
-                if success and core then
-                    scanAndHide(core)
-                end
-                
-                -- Quét PlayerGui (Nơi chứa các UI game khác)
-                scanAndHide(localPlayer.PlayerGui)
-            end
+            -- Áp dụng cho người chơi mới vào
+            Players.PlayerAdded:Connect(maskPlayer)
         end)
     end
     
-    -- Rainbow Effect
+    -- RAINBOW
     local function animateRainbowBorder()
         local h = 0 
         while true do
@@ -242,3 +227,4 @@ if localPlayer and playerGui then
 \_____/  |   \ |  |      |____  \____/
     ]])
 end
+-- hi
