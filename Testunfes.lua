@@ -1,5 +1,5 @@
 getgenv().ShowFPS = true 
-getgenv().HideLeaderboard = true -- [ON] Chỉ che tên trên Bảng Xếp Hạng (Tab)
+getgenv().HideLeaderboard = true -- [ON] Che tên trên Bảng Xếp Hạng
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -10,10 +10,10 @@ local CoreGui = game:GetService("CoreGui")
 local borderThickness = 3
 local outerCornerRadius = 15
 local transparencyLevel = 0.3
-local FONT_SIZE = 24 
-local NOTE_FONT_SIZE = 30 
+local FONT_SIZE = 22 -- Tăng nhẹ lại font cho vừa khung 0.45
+local NOTE_FONT_SIZE = 26 
 
--- [HÀM XỬ LÝ CHUỖI] Che 50% ký tự ở giữa
+-- [HÀM XỬ LÝ CHUỖI] Che 50%
 local function generateMaskedName(str)
     local len = #str
     if len <= 3 then return str end 
@@ -43,17 +43,17 @@ end
 local playerGui = localPlayer:WaitForChild("PlayerGui")
 
 if localPlayer and playerGui then 
-    -- ==========================================
-    -- PHẦN 1: GIAO DIỆN SCRIPT (CUSTOM GUI)
-    -- ==========================================
+    -- 1. GIAO DIỆN CHÍNH
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "AnimatedRainbowBorderGUI"
     screenGui.Parent = playerGui
     
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
-    -- Kích thước chuẩn 0.65 để không bị quá to che mất màn hình
-    outerFrame.Size = UDim2.new(0.65, 0, 0.15, 0) 
+    
+    -- [CHỈNH SỬA] Chiều rộng 0.45 theo yêu cầu
+    outerFrame.Size = UDim2.new(0.45, 0, 0.15, 0) 
+    
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -88,16 +88,16 @@ if localPlayer and playerGui then
     innerCorner.CornerRadius = UDim.new(0, outerCornerRadius - borderThickness)
     innerCorner.Parent = innerFrame
 
-    -- [HEADER] USERNAME (TRÁI) - FPS (PHẢI)
+    -- [HEADER]
     local headerFrame = Instance.new("Frame")
     headerFrame.Name = "HeaderFrame"
-    headerFrame.Size = UDim2.new(1, -20, 0.25, 0)
+    headerFrame.Size = UDim2.new(1, -15, 0.25, 0)
     headerFrame.BackgroundTransparency = 1
     headerFrame.Parent = innerFrame
 
     local usernameLabel = Instance.new("TextLabel")
     usernameLabel.Name = "UsernameLabel"
-    usernameLabel.Size = UDim2.new(0.7, 0, 1, 0)
+    usernameLabel.Size = UDim2.new(0.7, 0, 1, 0) 
     usernameLabel.Text = "User: " .. MASKED_USERNAME 
     usernameLabel.TextColor3 = Color3.new(0.8, 0.8, 0.8) 
     usernameLabel.TextScaled = false
@@ -121,17 +121,17 @@ if localPlayer and playerGui then
     fpsLabel.TextXAlignment = Enum.TextXAlignment.Right 
     fpsLabel.Parent = headerFrame
 
-    -- [BODY] NOTE AREA
+    -- [NOTE BODY]
     local noteScrollingFrame = Instance.new("ScrollingFrame")
     noteScrollingFrame.Size = UDim2.new(1, 0, 0.65, 0) 
     noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0) 
     noteScrollingFrame.BackgroundTransparency = 1
-    noteScrollingFrame.ScrollBarThickness = 6
+    noteScrollingFrame.ScrollBarThickness = 5 
     noteScrollingFrame.ClipsDescendants = true 
     noteScrollingFrame.Parent = innerFrame
 
     local noteTextBox = Instance.new("TextBox")
-    noteTextBox.Size = UDim2.new(1, -15, 0, 0) 
+    noteTextBox.Size = UDim2.new(1, -10, 0, 0) 
     noteTextBox.Position = UDim2.new(0, 5, 0, 0) 
     noteTextBox.Text = readConfig(CONFIG_FILE_NAME)
     noteTextBox.PlaceholderText = "Script by HuyUnfes"
@@ -148,10 +148,10 @@ if localPlayer and playerGui then
     noteTextBox.Parent = noteScrollingFrame
     
     local function updateCanvasSize()
-        local textBounds = TextService:GetTextSize(noteTextBox.Text, NOTE_FONT_SIZE, Enum.Font.SourceSans, Vector2.new(noteScrollingFrame.AbsoluteSize.X - 20, 10000))
-        local h = math.max(textBounds.Y + 30, noteScrollingFrame.AbsoluteSize.Y)
+        local textBounds = TextService:GetTextSize(noteTextBox.Text, NOTE_FONT_SIZE, Enum.Font.SourceSans, Vector2.new(noteScrollingFrame.AbsoluteSize.X - 10, 10000))
+        local h = math.max(textBounds.Y + 20, noteScrollingFrame.AbsoluteSize.Y)
         noteScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, h)
-        noteTextBox.Size = UDim2.new(1, -15, 0, h)
+        noteTextBox.Size = UDim2.new(1, -10, 0, h)
     end
     noteTextBox:GetPropertyChangedSignal("Text"):Connect(updateCanvasSize)
     noteTextBox:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateCanvasSize) 
@@ -172,14 +172,9 @@ if localPlayer and playerGui then
         end)
     end)
 
-    -- ==========================================
-    -- PHẦN 2: CHE TÊN LEADERBOARD (AN TOÀN)
-    -- ==========================================
-    -- Logic: Chỉ tìm đúng folder "PlayerList" trong CoreGui để đổi tên
-    -- Không đụng vào Chat, không đụng vào Menu kiểm tra
+    -- 2. CHE TÊN LEADERBOARD (SAFE MODE)
     if getgenv().HideLeaderboard then
         task.spawn(function()
-            -- Tạo danh sách map tên thật -> tên giả
             local NameMap = {}
             local function RefreshNameMap()
                 for _, p in pairs(Players:GetPlayers()) do
@@ -190,23 +185,14 @@ if localPlayer and playerGui then
             Players.PlayerAdded:Connect(RefreshNameMap)
             RefreshNameMap()
 
-            -- Vòng lặp quét nhẹ nhàng (1 giây 1 lần)
             while task.wait(1) do
-                local success, playerList = pcall(function() 
-                    return CoreGui:FindFirstChild("PlayerList") 
-                end)
-
+                local success, playerList = pcall(function() return CoreGui:FindFirstChild("PlayerList") end)
                 if success and playerList then
-                    -- Chỉ quét trong PlayerList (Bảng Tab)
                     for _, obj in pairs(playerList:GetDescendants()) do
                         if obj:IsA("TextLabel") or obj:IsA("TextButton") then
                             for real, masked in pairs(NameMap) do
-                                -- Nếu tìm thấy tên thật thì đổi thành tên giả
-                                if obj.Text == real or obj.Text:find(real) then
-                                    -- Kiểm tra nếu chưa bị che
-                                    if not obj.Text:find("*") then
-                                        obj.Text = obj.Text:gsub(real, masked)
-                                    end
+                                if (obj.Text == real or obj.Text:find(real)) and not obj.Text:find("*") then
+                                    obj.Text = obj.Text:gsub(real, masked)
                                 end
                             end
                         end
