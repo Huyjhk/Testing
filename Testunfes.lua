@@ -1,5 +1,5 @@
-getgenv().ShowFPS = true -- true/false
-getgenv().HideLeaderboard = false -- true/false
+getgenv().ShowFPS = true 
+getgenv().HideLeaderboard = true -- [ON] Chỉ che tên trên Bảng Xếp Hạng (Tab)
 
 local Players = game:GetService("Players")
 local localPlayer = Players.LocalPlayer
@@ -26,7 +26,7 @@ end
 
 local USERNAME = localPlayer.Name
 local MASKED_USERNAME = generateMaskedName(USERNAME)
-local CONFIG_FILE_NAME = "Unfes" USERNAME .. ".txt" 
+local CONFIG_FILE_NAME = USERNAME .. ".txt" 
 
 -- Đọc/Lưu file
 local function readConfig(fileName)
@@ -53,7 +53,7 @@ if localPlayer and playerGui then
     local outerFrame = Instance.new("Frame")
     outerFrame.Name = "RainbowBorderFrame"
     -- Kích thước chuẩn 0.65 để không bị quá to che mất màn hình
-    outerFrame.Size = UDim2.new(0.5, 0, 0.15, 0) 
+    outerFrame.Size = UDim2.new(0.65, 0, 0.15, 0) 
     outerFrame.Position = UDim2.new(0.5, 0, 0.05, 0) 
     outerFrame.AnchorPoint = Vector2.new(0.5, 0)
     outerFrame.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -237,4 +237,3 @@ if localPlayer and playerGui then
 \_____/  |   \ |  |      |____  \____/
     ]])
 end
--- test.lua
